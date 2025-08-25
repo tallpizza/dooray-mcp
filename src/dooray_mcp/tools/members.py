@@ -72,8 +72,6 @@ class MembersTool:
     async def _list_project_members(self, arguments: Dict[str, Any]) -> str:
         """List members of a project."""
         project_id = arguments.get("projectId")
-        if not project_id:
-            return json.dumps({"error": "projectId is required for list_project_members action"})
         
         result = await self.client.list_project_members(project_id)
         return json.dumps(result, ensure_ascii=False)

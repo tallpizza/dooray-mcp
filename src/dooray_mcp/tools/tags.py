@@ -45,8 +45,6 @@ class TagsTool:
     async def _list_tags(self, arguments: Dict[str, Any]) -> str:
         """List tags in a project."""
         project_id = arguments.get("projectId")
-        if not project_id:
-            return json.dumps({"error": "projectId is required for list action"})
         
         result = await self.client.list_tags(project_id)
         return json.dumps(result, ensure_ascii=False)
@@ -56,8 +54,8 @@ class TagsTool:
         project_id = arguments.get("projectId")
         tag_name = arguments.get("tagName")
         
-        if not project_id or not tag_name:
-            return json.dumps({"error": "projectId and tagName are required for create action"})
+        if not tag_name:
+            return json.dumps({"error": "tagName is required for create action"})
         
         # Build tag data
         tag_color = arguments.get("tagColor", "4CAF50")  # 기본 녹색

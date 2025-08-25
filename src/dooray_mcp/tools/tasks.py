@@ -166,8 +166,8 @@ class TasksTool:
         task_id = arguments.get("taskId")
         assignee_id = arguments.get("assigneeId")
         
-        if not project_id or not task_id or not assignee_id:
-            return json.dumps({"error": "projectId, taskId, and assigneeId are required for assign action"})
+        if not task_id or not assignee_id:
+            return json.dumps({"error": "taskId and assigneeId are required for assign action"})
         
         task_data = {"users": [{"member": {"id": assignee_id}}]}
         result = await self.client.update_task(project_id, task_id, task_data)

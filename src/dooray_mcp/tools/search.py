@@ -49,8 +49,8 @@ class SearchTool:
         project_id = arguments.get("projectId")
         query = arguments.get("query")
         
-        if not project_id or not query:
-            return json.dumps({"error": "projectId and query are required for tasks search"})
+        if not query:
+            return json.dumps({"error": "query is required for tasks search"})
         
         # Build search parameters
         params = {}
@@ -65,8 +65,8 @@ class SearchTool:
         project_id = arguments.get("projectId")
         assignee_id = arguments.get("assigneeId")
         
-        if not project_id or not assignee_id:
-            return json.dumps({"error": "projectId and assigneeId are required for by_assignee search"})
+        if not assignee_id:
+            return json.dumps({"error": "assigneeId is required for by_assignee search"})
         
         # Build search parameters
         params = {}
@@ -81,8 +81,8 @@ class SearchTool:
         project_id = arguments.get("projectId")
         status = arguments.get("status")
         
-        if not project_id or not status:
-            return json.dumps({"error": "projectId and status are required for by_status search"})
+        if not status:
+            return json.dumps({"error": "status is required for by_status search"})
         
         # Build search parameters
         params = {}
@@ -97,8 +97,8 @@ class SearchTool:
         project_id = arguments.get("projectId")
         tag_name = arguments.get("tagName")
         
-        if not project_id or not tag_name:
-            return json.dumps({"error": "projectId and tagName are required for by_tag search"})
+        if not tag_name:
+            return json.dumps({"error": "tagName is required for by_tag search"})
         
         # Build search parameters
         params = {}
@@ -114,8 +114,8 @@ class SearchTool:
         start_date = arguments.get("startDate")
         end_date = arguments.get("endDate")
         
-        if not project_id or not start_date or not end_date:
-            return json.dumps({"error": "projectId, startDate, and endDate are required for by_date_range search"})
+        if not start_date or not end_date:
+            return json.dumps({"error": "startDate and endDate are required for by_date_range search"})
         
         # Build search parameters
         params = {}

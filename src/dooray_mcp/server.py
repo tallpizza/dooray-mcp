@@ -49,10 +49,6 @@ async def handle_list_tools() -> list[types.Tool]:
                         "enum": ["list", "get", "create", "update", "delete", "change_status", "assign"],
                         "description": "Action to perform"
                     },
-                    "projectId": {
-                        "type": "string",
-                        "description": "Project ID (optional - uses default from environment if not provided)"
-                    },
                     "taskId": {
                         "type": "string", 
                         "description": "Task ID (required for get/update/delete/status/assign)"
@@ -124,10 +120,6 @@ async def handle_list_tools() -> list[types.Tool]:
                         "enum": ["list", "create", "add_to_task", "remove_from_task"],
                         "description": "Action to perform on tags"
                     },
-                    "projectId": {
-                        "type": "string",
-                        "description": "Project ID (optional - uses default from environment if not provided)"
-                    },
                     "taskId": {
                         "type": "string",
                         "description": "Task ID (required for add_to_task/remove_from_task)"
@@ -154,10 +146,6 @@ async def handle_list_tools() -> list[types.Tool]:
                         "type": "string",
                         "enum": ["tasks", "by_assignee", "by_status", "by_tag", "by_date_range"],
                         "description": "Type of search to perform"
-                    },
-                    "projectId": {
-                        "type": "string",
-                        "description": "Project ID (optional - uses default from environment if not provided)"
                     },
                     "query": {
                         "type": "string",
@@ -231,10 +219,26 @@ async def handle_call_tool(name: str, arguments: dict[str, Any] | None) -> list[
             text="Error: Dooray client not initialized. Please check your DOORAY_API_TOKEN environment variable."
         )]
     
-    # Add default project ID if not provided
+    # Use default project ID from environment for tools that need it
     args = arguments or {}
-    if default_project_id and "projectId" not in args:
+    
+    # Only add projectId for tools that need it (all except some member operations)
+    if name in ["dooray_tasks", "dooray_comments", "dooray_tags", "dooray_search"]:
+        if not default_project_id:
+            return [types.TextContent(
+                type="text",
+                text="Error: DOORAY_DEFAULT_PROJECT_ID environment variable is required"
+            )]
         args["projectId"] = default_project_id
+    elif name == "dooray_members":
+        # Only add projectId for list_project_members action
+        if args.get("action") == "list_project_members":
+            if not default_project_id:
+                return [types.TextContent(
+                    type="text",
+                    text="Error: DOORAY_DEFAULT_PROJECT_ID environment variable is required"
+                )]
+            args["projectId"] = default_project_id
     
     try:
         if name == "dooray_tasks":
