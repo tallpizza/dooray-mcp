@@ -262,8 +262,8 @@ async def handle_call_tool(name: str, arguments: dict[str, Any] | None) -> list[
             text=f"Error: {str(e)}"
         )]
 
-async def main():
-    """Main entry point for the MCP server."""
+async def async_main():
+    """Async main entry point for the MCP server."""
     global dooray_client, default_project_id
     
     # Initialize Dooray client
@@ -293,5 +293,9 @@ async def main():
             )
         )
 
+def main():
+    """Main entry point for the MCP server."""
+    asyncio.run(async_main())
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
