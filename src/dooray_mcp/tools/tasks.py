@@ -52,7 +52,7 @@ class TasksTool:
         """List tasks in a project."""
         project_id = arguments.get("projectId")
         if not project_id:
-            return json.dumps({"error": "projectId is required for list action"})
+            return json.dumps({"error": "projectId is required for list action (set DOORAY_DEFAULT_PROJECT_ID or provide projectId)"})
         
         # Build query parameters
         params = {}

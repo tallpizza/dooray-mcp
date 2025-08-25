@@ -51,7 +51,7 @@ async def handle_list_tools() -> list[types.Tool]:
                     },
                     "projectId": {
                         "type": "string",
-                        "description": "Project ID (required for most actions)"
+                        "description": "Project ID (optional - uses default from environment if not provided)"
                     },
                     "taskId": {
                         "type": "string", 
@@ -126,7 +126,7 @@ async def handle_list_tools() -> list[types.Tool]:
                     },
                     "projectId": {
                         "type": "string",
-                        "description": "Project ID (required for list/create)"
+                        "description": "Project ID (optional - uses default from environment if not provided)"
                     },
                     "taskId": {
                         "type": "string",
@@ -157,7 +157,7 @@ async def handle_list_tools() -> list[types.Tool]:
                     },
                     "projectId": {
                         "type": "string",
-                        "description": "Project ID (required for most searches)"
+                        "description": "Project ID (optional - uses default from environment if not provided)"
                     },
                     "query": {
                         "type": "string",
@@ -212,7 +212,7 @@ async def handle_list_tools() -> list[types.Tool]:
                     },
                     "projectId": {
                         "type": "string",
-                        "description": "Project ID (for list_project_members)"
+                        "description": "Project ID (optional - uses default from environment if not provided)"
                     }
                 },
                 "required": ["action"]
@@ -223,7 +223,7 @@ async def handle_list_tools() -> list[types.Tool]:
 @app.call_tool()
 async def handle_call_tool(name: str, arguments: dict[str, Any] | None) -> list[types.TextContent]:
     """Handle tool calls from Claude."""
-    global dooray_client
+    global dooray_client, default_project_id
     
     if not dooray_client:
         return [types.TextContent(
@@ -231,22 +231,27 @@ async def handle_call_tool(name: str, arguments: dict[str, Any] | None) -> list[
             text="Error: Dooray client not initialized. Please check your DOORAY_API_TOKEN environment variable."
         )]
     
+    # Add default project ID if not provided
+    args = arguments or {}
+    if default_project_id and "projectId" not in args:
+        args["projectId"] = default_project_id
+    
     try:
         if name == "dooray_tasks":
             tool = TasksTool(dooray_client)
-            result = await tool.handle(arguments or {})
+            result = await tool.handle(args)
         elif name == "dooray_comments":
             tool = CommentsTool(dooray_client)
-            result = await tool.handle(arguments or {})
+            result = await tool.handle(args)
         elif name == "dooray_tags":
             tool = TagsTool(dooray_client)
-            result = await tool.handle(arguments or {})
+            result = await tool.handle(args)
         elif name == "dooray_search":
             tool = SearchTool(dooray_client)
-            result = await tool.handle(arguments or {})
+            result = await tool.handle(args)
         elif name == "dooray_members":
             tool = MembersTool(dooray_client)
-            result = await tool.handle(arguments or {})
+            result = await tool.handle(args)
         else:
             return [types.TextContent(
                 type="text",
