@@ -1,0 +1,12 @@
+{
+  "dooray": {
+    "type": "stdio",
+    "command": "uv",
+    "args": ["run", "python", "-m", "dooray_mcp.server"],
+    "env": {
+      "DOORAY_API_TOKEN": "your-dooray-api-token-here",
+      "DOORAY_BASE_URL": "https://api.dooray.com",
+      "DOORAY_DEFAULT_PROJECT_ID": "your-default-project-id-here"
+    }
+  }
+}

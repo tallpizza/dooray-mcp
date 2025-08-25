@@ -1,0 +1,22 @@
+[project]
+name = "dooray-mcp"
+version = "0.1.0"
+description = "Dooray MCP Server for Claude Code integration"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "mcp>=1.0.0",
+    "httpx>=0.25.0",
+    "python-dotenv>=1.0.0",
+    "pydantic>=2.0.0",
+]
+
+[project.scripts]
+dooray-mcp = "dooray_mcp.server:main"
+
+[tool.uv]
+package = true
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
