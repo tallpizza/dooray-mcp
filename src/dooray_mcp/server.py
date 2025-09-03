@@ -131,6 +131,10 @@ async def handle_list_tools() -> list[types.Tool]:
                     "tagColor": {
                         "type": "string",
                         "description": "Tag color (for create action, optional)"
+                    },
+                    "filter": {
+                        "type": "string",
+                        "description": "Optional substring to filter tag list by name (list action)"
                     }
                 },
                 "required": ["action"]

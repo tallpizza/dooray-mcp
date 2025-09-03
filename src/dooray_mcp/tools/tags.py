@@ -43,10 +43,25 @@ class TagsTool:
             return json.dumps({"error": str(e)})
     
     async def _list_tags(self, arguments: Dict[str, Any]) -> str:
-        """List tags in a project."""
+        """List tags in a project, with optional name filter.
+
+        Supports client-side filtering using substring match (case-insensitive)
+        when a `filter` (or `query`) field is provided in arguments.
+        """
         project_id = arguments.get("projectId")
-        
+
         result = await self.client.list_tags(project_id)
+
+        # Apply optional client-side filtering by tag name
+        filter_text = arguments.get("filter") or arguments.get("query")
+        if filter_text and isinstance(result, dict) and isinstance(result.get("result"), list):
+            needle = str(filter_text).lower()
+            filtered = [
+                tag for tag in result["result"]
+                if str(tag.get("name", "")).lower().find(needle) != -1
+            ]
+            result = {**result, "result": filtered}
+
         return json.dumps(result, ensure_ascii=False)
     
     async def _create_tag(self, arguments: Dict[str, Any]) -> str:
