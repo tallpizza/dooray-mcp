@@ -154,3 +154,49 @@ class DoorayClient:
         """Search tasks by date range."""
         search_params = {"from": start_date, "to": end_date, **params}
         return await self._request("GET", f"/project/v1/projects/{project_id}/posts", params=search_params)
+    
+    # File methods for Tasks (Posts)
+    async def list_task_files(self, project_id: str, task_id: str) -> Dict[str, Any]:
+        """List files attached to a task."""
+        return await self._request("GET", f"/project/v1/projects/{project_id}/posts/{task_id}/files")
+    
+    async def get_task_file_metadata(self, project_id: str, task_id: str, file_id: str) -> Dict[str, Any]:
+        """Get file metadata for a task file."""
+        return await self._request("GET", f"/project/v1/projects/{project_id}/posts/{task_id}/files/{file_id}", params={"media": "meta"})
+    
+    async def get_task_file_content(self, project_id: str, task_id: str, file_id: str) -> bytes:
+        """Get raw file content from a task."""
+        url = f"{self.base_url}/project/v1/projects/{project_id}/posts/{task_id}/files/{file_id}?media=raw"
+        logger.debug(f"Making GET request for task file content to {url}")
+        
+        try:
+            response = await self.client.get(url)
+            response.raise_for_status()
+            return response.content
+        except httpx.HTTPError as e:
+            logger.error(f"HTTP error: {e}")
+            raise Exception(f"Dooray API error: {str(e)}")
+        except Exception as e:
+            logger.error(f"Request error: {e}")
+            raise Exception(f"Request failed: {str(e)}")
+    
+    # File methods for Drive (direct content access)
+    async def get_drive_file_metadata(self, file_id: str) -> Dict[str, Any]:
+        """Get file metadata from Drive by content ID."""
+        return await self._request("GET", f"/drive/v1/files/{file_id}", params={"media": "meta"})
+    
+    async def get_drive_file_content(self, file_id: str) -> bytes:
+        """Get raw file content from Drive by content ID."""
+        url = f"{self.base_url}/drive/v1/files/{file_id}?media=raw"
+        logger.debug(f"Making GET request for drive file content to {url}")
+        
+        try:
+            response = await self.client.get(url)
+            response.raise_for_status()
+            return response.content
+        except httpx.HTTPError as e:
+            logger.error(f"HTTP error: {e}")
+            raise Exception(f"Dooray API error: {str(e)}")
+        except Exception as e:
+            logger.error(f"Request error: {e}")
+            raise Exception(f"Request failed: {str(e)}")

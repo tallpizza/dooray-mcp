@@ -19,12 +19,14 @@ from .tools.comments import CommentsTool
 from .tools.tags import TagsTool
 from .tools.search import SearchTool
 from .tools.members import MembersTool
+from .tools.files import FilesTool
 
 # Load environment variables
 load_dotenv()
 
 # Configure logging
-logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
+log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+logging.basicConfig(level=getattr(logging, log_level, logging.INFO))
 logger = logging.getLogger(__name__)
 
 # Initialize the MCP server
@@ -209,6 +211,33 @@ async def handle_list_tools() -> list[types.Tool]:
                 },
                 "required": ["action"]
             }
+        ),
+        types.Tool(
+            name="dooray_files",
+            description="Manage Dooray files and images - list task files, get file metadata, download file content from tasks or directly by content ID",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "action": {
+                        "type": "string",
+                        "enum": ["list_task_files", "get_task_file_metadata", "get_task_file_content", "get_drive_file_metadata", "get_drive_file_content"],
+                        "description": "Action to perform on files"
+                    },
+                    "taskId": {
+                        "type": "string",
+                        "description": "Task ID (required for task file actions)"
+                    },
+                    "fileId": {
+                        "type": "string",
+                        "description": "File ID (required for file operations)"
+                    },
+                    "projectId": {
+                        "type": "string",
+                        "description": "Project ID (optional - uses default from environment if not provided, required for task file actions)"
+                    }
+                },
+                "required": ["action"]
+            }
         )
     ]
 
@@ -234,6 +263,16 @@ async def handle_call_tool(name: str, arguments: dict[str, Any] | None) -> list[
                 text="Error: DOORAY_DEFAULT_PROJECT_ID environment variable is required"
             )]
         args["projectId"] = default_project_id
+    elif name == "dooray_files":
+        # Add projectId for task file actions only if not provided
+        if args.get("action") in ["list_task_files", "get_task_file_metadata", "get_task_file_content"]:
+            if not args.get("projectId") and not default_project_id:
+                return [types.TextContent(
+                    type="text",
+                    text="Error: DOORAY_DEFAULT_PROJECT_ID environment variable is required for task file operations"
+                )]
+            if not args.get("projectId"):
+                args["projectId"] = default_project_id
     elif name == "dooray_members":
         # Only add projectId for list_project_members action
         if args.get("action") == "list_project_members":
@@ -259,6 +298,9 @@ async def handle_call_tool(name: str, arguments: dict[str, Any] | None) -> list[
             result = await tool.handle(args)
         elif name == "dooray_members":
             tool = MembersTool(dooray_client)
+            result = await tool.handle(args)
+        elif name == "dooray_files":
+            tool = FilesTool(dooray_client)
             result = await tool.handle(args)
         else:
             return [types.TextContent(
