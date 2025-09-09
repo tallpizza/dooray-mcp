@@ -170,7 +170,7 @@ class DoorayClient:
         logger.debug(f"Making GET request for task file content to {url}")
         
         try:
-            response = await self.client.get(url)
+            response = await self.client.get(url, follow_redirects=True)
             response.raise_for_status()
             return response.content
         except httpx.HTTPError as e:
@@ -191,7 +191,7 @@ class DoorayClient:
         logger.debug(f"Making GET request for drive file content to {url}")
         
         try:
-            response = await self.client.get(url)
+            response = await self.client.get(url, follow_redirects=True)
             response.raise_for_status()
             return response.content
         except httpx.HTTPError as e:
