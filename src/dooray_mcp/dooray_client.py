@@ -170,7 +170,18 @@ class DoorayClient:
         logger.debug(f"Making GET request for task file content to {url}")
         
         try:
-            response = await self.client.get(url, follow_redirects=True)
+            # First request to get redirect URL
+            response = await self.client.get(url, follow_redirects=False)
+            
+            if response.status_code in [307, 302, 301]:
+                # Handle redirect manually with proper headers
+                redirect_url = response.headers.get("location")
+                if redirect_url:
+                    logger.debug(f"Following redirect to {redirect_url}")
+                    response = await self.client.get(redirect_url)
+                    response.raise_for_status()
+                    return response.content
+            
             response.raise_for_status()
             return response.content
         except httpx.HTTPError as e:
@@ -191,7 +202,18 @@ class DoorayClient:
         logger.debug(f"Making GET request for drive file content to {url}")
         
         try:
-            response = await self.client.get(url, follow_redirects=True)
+            # First request to get redirect URL
+            response = await self.client.get(url, follow_redirects=False)
+            
+            if response.status_code in [307, 302, 301]:
+                # Handle redirect manually with proper headers
+                redirect_url = response.headers.get("location")
+                if redirect_url:
+                    logger.debug(f"Following redirect to {redirect_url}")
+                    response = await self.client.get(redirect_url)
+                    response.raise_for_status()
+                    return response.content
+            
             response.raise_for_status()
             return response.content
         except httpx.HTTPError as e:
