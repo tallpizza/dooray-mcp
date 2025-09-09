@@ -57,6 +57,22 @@ class DoorayClient:
             logger.error(f"Request error: {e}")
             raise Exception(f"Request failed: {str(e)}")
     
+    async def get(self, endpoint: str, **kwargs) -> Dict[str, Any]:
+        """Make GET request."""
+        return await self._request("GET", endpoint, **kwargs)
+    
+    async def post(self, endpoint: str, data: Dict[str, Any], **kwargs) -> Dict[str, Any]:
+        """Make POST request."""
+        return await self._request("POST", endpoint, json=data, **kwargs)
+    
+    async def put(self, endpoint: str, data: Dict[str, Any], **kwargs) -> Dict[str, Any]:
+        """Make PUT request."""
+        return await self._request("PUT", endpoint, json=data, **kwargs)
+    
+    async def delete(self, endpoint: str, **kwargs) -> Dict[str, Any]:
+        """Make DELETE request."""
+        return await self._request("DELETE", endpoint, **kwargs)
+    
     # Project methods
     async def get_project(self, project_id: str) -> Dict[str, Any]:
         """Get project information."""
