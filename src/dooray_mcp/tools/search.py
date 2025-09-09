@@ -37,6 +37,10 @@ class SearchTool:
                 return await self._search_by_tag(arguments)
             elif search_type == "by_date_range":
                 return await self._search_by_date_range(arguments)
+            elif search_type == "by_workflow":
+                return await self._search_by_workflow(arguments)
+            elif search_type == "advanced":
+                return await self._advanced_search(arguments)
             else:
                 return json.dumps({"error": f"Unknown search type: {search_type}"})
                 
@@ -123,4 +127,37 @@ class SearchTool:
             params["size"] = arguments["limit"]
         
         result = await self.client.search_tasks_by_date_range(project_id, start_date, end_date, **params)
+        return json.dumps(result, ensure_ascii=False)
+    
+    async def _search_by_workflow(self, arguments: Dict[str, Any]) -> str:
+        """Search tasks by workflow ID."""
+        project_id = arguments.get("projectId")
+        workflow_id = arguments.get("workflowId")
+        
+        if not workflow_id:
+            return json.dumps({"error": "workflowId is required for by_workflow search"})
+        
+        # Build search parameters
+        params = {}
+        if arguments.get("limit"):
+            params["size"] = arguments["limit"]
+        
+        result = await self.client.search_tasks_by_workflow(project_id, workflow_id, **params)
+        return json.dumps(result, ensure_ascii=False)
+    
+    async def _advanced_search(self, arguments: Dict[str, Any]) -> str:
+        """Advanced search with multiple conditions and AND/OR logic."""
+        project_id = arguments.get("projectId")
+        conditions = arguments.get("conditions", [])
+        logic_operator = arguments.get("logicOperator", "AND")  # AND or OR
+        
+        if not conditions:
+            return json.dumps({"error": "conditions array is required for advanced search"})
+        
+        # Build search parameters
+        params = {}
+        if arguments.get("limit"):
+            params["size"] = arguments["limit"]
+        
+        result = await self.client.advanced_search_tasks(project_id, conditions, logic_operator, **params)
         return json.dumps(result, ensure_ascii=False)

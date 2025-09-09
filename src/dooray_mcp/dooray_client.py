@@ -9,14 +9,16 @@ logger = logging.getLogger(__name__)
 class DoorayClient:
     """Client for interacting with Dooray API."""
     
-    def __init__(self, api_token: str, base_url: str = "https://api.dooray.com"):
+    def __init__(self, api_token: str, base_url: str = "https://api.dooray.com", project_id: Optional[str] = None):
         """Initialize Dooray client.
         
         Args:
             api_token: Dooray API token
             base_url: Base URL for Dooray API
+            project_id: Default project ID (optional)
         """
         self.base_url = base_url.rstrip('/')
+        self.project_id = project_id
         self.headers = {
             "Authorization": f"dooray-api {api_token}",
             "Content-Type": "application/json"
@@ -154,6 +156,104 @@ class DoorayClient:
         """Search tasks by date range."""
         search_params = {"from": start_date, "to": end_date, **params}
         return await self._request("GET", f"/project/v1/projects/{project_id}/posts", params=search_params)
+    
+    async def search_tasks_by_workflow(self, project_id: str, workflow_id: str, **params) -> Dict[str, Any]:
+        """Search tasks by workflow ID."""
+        search_params = {"workflowId": workflow_id, **params}
+        return await self._request("GET", f"/project/v1/projects/{project_id}/posts", params=search_params)
+    
+    async def advanced_search_tasks(self, project_id: str, conditions: List[Dict[str, Any]], logic_operator: str = "AND", **params) -> Dict[str, Any]:
+        """
+        Advanced search with multiple conditions and AND/OR logic.
+        
+        Args:
+            project_id: Project ID
+            conditions: List of search conditions, each containing:
+                - type: 'workflow', 'assignee', 'tag', 'status', 'query', 'date_range'
+                - value: condition value (varies by type)
+                - Additional fields based on type
+            logic_operator: 'AND' or 'OR' for combining conditions
+            **params: Additional parameters
+            
+        Returns:
+            Combined search results
+        """
+        if logic_operator.upper() == "AND":
+            # For AND logic, apply all filters at once
+            search_params = {}
+            
+            for condition in conditions:
+                cond_type = condition.get("type")
+                value = condition.get("value")
+                
+                if cond_type == "workflow" and value:
+                    search_params["workflowId"] = value
+                elif cond_type == "assignee" and value:
+                    search_params["assigneeId"] = value
+                elif cond_type == "tag" and value:
+                    search_params["tagName"] = value
+                elif cond_type == "status" and value:
+                    search_params["workflowClass"] = value
+                elif cond_type == "query" and value:
+                    search_params["query"] = value
+                elif cond_type == "date_range":
+                    start_date = condition.get("startDate")
+                    end_date = condition.get("endDate")
+                    if start_date and end_date:
+                        search_params["from"] = start_date
+                        search_params["to"] = end_date
+            
+            search_params.update(params)
+            return await self._request("GET", f"/project/v1/projects/{project_id}/posts", params=search_params)
+        
+        else:  # OR logic
+            # For OR logic, make separate requests and combine results
+            all_results = []
+            all_task_ids = set()
+            
+            for condition in conditions:
+                try:
+                    cond_type = condition.get("type")
+                    value = condition.get("value")
+                    
+                    if cond_type == "workflow" and value:
+                        result = await self.search_tasks_by_workflow(project_id, value, **params)
+                    elif cond_type == "assignee" and value:
+                        result = await self.search_tasks_by_assignee(project_id, value, **params)
+                    elif cond_type == "tag" and value:
+                        result = await self.search_tasks_by_tag(project_id, value, **params)
+                    elif cond_type == "status" and value:
+                        result = await self.search_tasks_by_status(project_id, value, **params)
+                    elif cond_type == "query" and value:
+                        result = await self.search_tasks(project_id, value, **params)
+                    elif cond_type == "date_range":
+                        start_date = condition.get("startDate")
+                        end_date = condition.get("endDate")
+                        if start_date and end_date:
+                            result = await self.search_tasks_by_date_range(project_id, start_date, end_date, **params)
+                        else:
+                            continue
+                    else:
+                        continue
+                    
+                    # Add unique results
+                    if result.get("result"):
+                        for task in result["result"]:
+                            task_id = task.get("id")
+                            if task_id and task_id not in all_task_ids:
+                                all_task_ids.add(task_id)
+                                all_results.append(task)
+                
+                except Exception as e:
+                    logger.warning(f"Error in condition {condition}: {e}")
+                    continue
+            
+            # Return combined results in the same format as other search methods
+            return {
+                "header": {"resultCode": 0, "resultMessage": "", "isSuccessful": True},
+                "result": all_results,
+                "totalCount": len(all_results)
+            }
     
     # File methods for Tasks (Posts)
     async def list_task_files(self, project_id: str, task_id: str) -> Dict[str, Any]:

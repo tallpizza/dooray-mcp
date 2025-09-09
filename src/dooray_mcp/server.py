@@ -20,6 +20,7 @@ from .tools.tags import TagsTool
 from .tools.search import SearchTool
 from .tools.members import MembersTool
 from .tools.files import FilesTool
+from .tools.workflows import WorkflowsTool
 
 # Load environment variables
 load_dotenv()
@@ -144,13 +145,13 @@ async def handle_list_tools() -> list[types.Tool]:
         ),
         types.Tool(
             name="dooray_search",
-            description="Search Dooray content - tasks by various criteria, filter by status/assignee/tags/date range",
+            description="Search Dooray content - tasks by various criteria including workflow, assignee, tags, status, date range with AND/OR logic",
             inputSchema={
                 "type": "object",
                 "properties": {
                     "searchType": {
                         "type": "string",
-                        "enum": ["tasks", "by_assignee", "by_status", "by_tag", "by_date_range"],
+                        "enum": ["tasks", "by_assignee", "by_status", "by_tag", "by_date_range", "by_workflow", "advanced"],
                         "description": "Type of search to perform"
                     },
                     "query": {
@@ -169,6 +170,10 @@ async def handle_list_tools() -> list[types.Tool]:
                         "type": "string",
                         "description": "Tag name (for by_tag search)"
                     },
+                    "workflowId": {
+                        "type": "string",
+                        "description": "Workflow ID (for by_workflow search)"
+                    },
                     "startDate": {
                         "type": "string",
                         "description": "Start date (for by_date_range search)"
@@ -176,6 +181,38 @@ async def handle_list_tools() -> list[types.Tool]:
                     "endDate": {
                         "type": "string",
                         "description": "End date (for by_date_range search)"
+                    },
+                    "conditions": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "type": {
+                                    "type": "string",
+                                    "enum": ["workflow", "assignee", "tag", "status", "query", "date_range"],
+                                    "description": "Type of search condition"
+                                },
+                                "value": {
+                                    "type": "string",
+                                    "description": "Value for the condition (workflow ID, assignee ID, tag name, status, or query text)"
+                                },
+                                "startDate": {
+                                    "type": "string",
+                                    "description": "Start date (for date_range type)"
+                                },
+                                "endDate": {
+                                    "type": "string",
+                                    "description": "End date (for date_range type)"
+                                }
+                            },
+                            "required": ["type"]
+                        },
+                        "description": "Array of search conditions (for advanced search)"
+                    },
+                    "logicOperator": {
+                        "type": "string",
+                        "enum": ["AND", "OR"],
+                        "description": "Logic operator for combining conditions in advanced search (default: AND)"
                     },
                     "limit": {
                         "type": "integer",
@@ -238,6 +275,33 @@ async def handle_list_tools() -> list[types.Tool]:
                 },
                 "required": ["action"]
             }
+        ),
+        types.Tool(
+            name="dooray_workflows",
+            description="Manage Dooray workflows - list project workflows, get workflow details, create, update, delete workflows",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "action": {
+                        "type": "string",
+                        "enum": ["list", "get", "create", "update", "delete"],
+                        "description": "Action to perform on workflows"
+                    },
+                    "workflowId": {
+                        "type": "string",
+                        "description": "Workflow ID (required for get/update/delete)"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Workflow name (for create/update)"
+                    },
+                    "projectId": {
+                        "type": "string",
+                        "description": "Project ID (optional - uses default from environment if not provided)"
+                    }
+                },
+                "required": ["action"]
+            }
         )
     ]
 
@@ -256,7 +320,7 @@ async def handle_call_tool(name: str, arguments: dict[str, Any] | None) -> list[
     args = arguments or {}
     
     # Only add projectId for tools that need it (all except some member operations)
-    if name in ["dooray_tasks", "dooray_comments", "dooray_tags", "dooray_search"]:
+    if name in ["dooray_tasks", "dooray_comments", "dooray_tags", "dooray_search", "dooray_workflows"]:
         if not default_project_id:
             return [types.TextContent(
                 type="text",
@@ -302,6 +366,9 @@ async def handle_call_tool(name: str, arguments: dict[str, Any] | None) -> list[
         elif name == "dooray_files":
             tool = FilesTool(dooray_client)
             result = await tool.handle(args)
+        elif name == "dooray_workflows":
+            tool = WorkflowsTool(dooray_client)
+            result = await tool.handle(args)
         else:
             return [types.TextContent(
                 type="text",
@@ -330,7 +397,7 @@ async def async_main():
         logger.error("DOORAY_API_TOKEN environment variable is required")
         sys.exit(1)
     
-    dooray_client = DoorayClient(api_token, base_url)
+    dooray_client = DoorayClient(api_token, base_url, default_project_id)
     logger.info(f"Dooray MCP Server starting... (Default Project: {default_project_id})")
     
     # Run the server
