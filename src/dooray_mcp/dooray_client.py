@@ -94,14 +94,27 @@ class DoorayClient:
     async def create_task(self, project_id: str, task_data: Dict[str, Any]) -> Dict[str, Any]:
         """Create a new task."""
         return await self._request("POST", f"/project/v1/projects/{project_id}/posts", json=task_data)
-    
+
     async def update_task(self, project_id: str, task_id: str, task_data: Dict[str, Any]) -> Dict[str, Any]:
         """Update an existing task."""
         return await self._request("PUT", f"/project/v1/projects/{project_id}/posts/{task_id}", json=task_data)
-    
+
     async def delete_task(self, project_id: str, task_id: str) -> Dict[str, Any]:
         """Delete a task."""
         return await self._request("DELETE", f"/project/v1/projects/{project_id}/posts/{task_id}")
+
+    async def list_workflows(self, project_id: str) -> Dict[str, Any]:
+        """List workflows for a project."""
+        return await self._request("GET", f"/project/v1/projects/{project_id}/workflows")
+
+    async def set_task_workflow(self, project_id: str, task_id: str, workflow_id: str) -> Dict[str, Any]:
+        """Change workflow for a task."""
+        payload = {"workflowId": workflow_id}
+        return await self._request(
+            "POST",
+            f"/project/v1/projects/{project_id}/posts/{task_id}/set-workflow",
+            json=payload,
+        )
     
     # Comment methods (using logs endpoint)
     async def list_comments(self, project_id: str, task_id: str) -> Dict[str, Any]:

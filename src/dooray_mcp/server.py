@@ -66,7 +66,11 @@ async def handle_list_tools() -> list[types.Tool]:
                     },
                     "status": {
                         "type": "string",
-                        "description": "Task status (for create/update/change_status)"
+                        "description": "Task status class or workflow name (for create/update/change_status)"
+                    },
+                    "workflowId": {
+                        "type": "string",
+                        "description": "Workflow ID (for change_status when you know the exact workflow)"
                     },
                     "assigneeId": {
                         "type": "string",

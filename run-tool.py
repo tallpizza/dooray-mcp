@@ -67,20 +67,39 @@ def main():
     )
     args = parser.parse_args()
 
-    # params 파싱 (--a 2 → {"a": 2})
+    def coerce_value(raw: str | None):
+        if raw is None:
+            return None
+
+        text = str(raw)
+        if text.startswith("--"):
+            return text
+
+        integer_like = text.lstrip("-")
+        if integer_like.isdigit():
+            if len(integer_like) <= 9:
+                try:
+                    return int(text)
+                except ValueError:
+                    return text
+            return text
+
+        try:
+            value = float(text)
+        except ValueError:
+            return text
+
+        if any(sep in text for sep in (".", "e", "E")):
+            return value
+
+        return text
+
     params_dict = {}
     it = iter(args.params)
     for k in it:
         if k.startswith("--"):
             key = k[2:]
-            val = next(it, None)
-            try:
-                val = int(val)
-            except ValueError:
-                try:
-                    val = float(val)
-                except ValueError:
-                    pass
+            val = coerce_value(next(it, None))
             params_dict[key] = val
 
     if args.list_tools:
