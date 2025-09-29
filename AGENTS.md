@@ -1,34 +1,44 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- Source: `src/dooray_mcp/` — core server in `server.py`, HTTP client in `dooray_client.py`.
-- Tools: `src/dooray_mcp/tools/` — feature-specific handlers (`tasks.py`, `comments.py`, `tags.py`, `search.py`, `members.py`).
-- Entrypoint: `dooray_mcp.server:main` (script `dooray-mcp`), alternative `python -m dooray_mcp.server`.
-- Config/examples: `.env.example`, `.mcp.json.example`. Assets: `dooray-api.html`. Root helper: `main.py`.
+
+- Core implementation lives in `src/dooray_mcp/`; `server.py` holds the MCP entrypoint and `dooray_client.py` wraps the Dooray HTTP API.
+- Tool handlers reside in `src/dooray_mcp/tools/` with focused modules (`tasks.py`, `comments.py`, `tags.py`, `search.py`, `members.py`).
+- Configuration samples (`.env.example`, `.mcp.json.example`) and API reference (`dooray-api.html`) sit in the project root; `main.py` provides local helper utilities.
+- Tests should go under `tests/`, mirroring the package layout for easy discovery.
 
 ## Build, Test, and Development Commands
-- Install deps: `uv sync` — resolves and installs from `pyproject.toml`/`uv.lock`.
-- Run server: `uv run dooray-mcp` or `uv run python -m dooray_mcp.server`.
-- Env setup: `cp .env.example .env` then set `DOORAY_API_TOKEN`, `DOORAY_BASE_URL`, `DOORAY_DEFAULT_PROJECT_ID`, `LOG_LEVEL`.
-- Claude config (example): `claude mcp add-json dooray "$(cat .mcp.json | jq -c .dooray)"`.
+
+- `uv sync` — install and lock Python dependencies from `pyproject.toml`/`uv.lock`.
+- `uv run dooray-mcp` — launch the MCP server via the console script.
+- `uv run python -m dooray_mcp.server` — alternative entrypoint useful when debugging.
+- `pytest` — execute the test suite; add `-k pattern` to narrow scope while iterating.
 
 ## Coding Style & Naming Conventions
-- Python ≥ 3.11, PEP 8, 4-space indentation, type hints required.
-- Names: modules/functions `snake_case`, classes `PascalCase`, constants `UPPER_SNAKE_CASE`.
-- Tools expose `handle(self, arguments: dict) -> str` and private helpers like `_list_*`, `_create_*`.
-- Logging via `logging`; return JSON strings from tools; avoid printing in library code.
+
+- Target Python 3.11+, 4-space indentation, and PEP 8 compliance throughout.
+- Require type hints on public interfaces; prefer explicit `TypedDict`/`Protocol` when shaping Dooray payloads.
+- Naming: modules/functions use `snake_case`, classes `PascalCase`, constants `UPPER_SNAKE_CASE`.
+- Avoid prints in library code; rely on `logging` with configurable `LOG_LEVEL`.
 
 ## Testing Guidelines
-- Framework: `pytest` (suggested). Place tests under `tests/`, named `test_*.py`.
-- Write async tests with `pytest.mark.asyncio`. Mock Dooray calls using `httpx.MockTransport`.
-- Aim to cover tool branches (e.g., `list`, `create`, error paths) and server error handling.
+
+- Use `pytest` with async tests marked via `@pytest.mark.asyncio`.
+- Stub Dooray HTTP calls using `httpx.MockTransport` to keep tests deterministic.
+- Name test files `test_*.py` and mirror the tool or component under test.
+- Run `pytest --maxfail=1` before pushing to catch regressions quickly.
+- Manual tool validation: `python run-tool.py dooray_tasks --action list` launches the MCP server with `uv run dooray-mcp`, confirms the tool is registered, and executes the specified action; swap in other tool names and flags as needed.
 
 ## Commit & Pull Request Guidelines
-- Commits: short, imperative summaries (e.g., "Fix async main function"). Group related changes; include rationale in body when needed.
-- PRs: clear description, linked issues, reproduction/verification steps (commands used), and config notes if env vars or `.mcp.json` change.
-- Keep diffs focused; update docs/examples when behavior or inputs change.
+
+- Write commits in imperative mood (e.g., "Add task list handler"); group related changes and explain rationale in the body when useful.
+- Pull requests should summarize behavior changes, link related issues, and call out new env vars or config updates.
+- Include reproduction or verification steps (commands executed) and note any screenshots or logs stored externally.
 
 ## Security & Configuration Tips
-- Never commit secrets. Keep tokens in `.env` (gitignored). Validate required vars on startup.
-- The server uses stdio transport; verify connectivity with `claude mcp list`.
-- Prefer raising/propagating errors with informative messages; avoid logging sensitive payloads.
+
+- Copy `.env.example` to `.env`, then set `DOORAY_API_TOKEN`, `DOORAY_BASE_URL`, `DOORAY_DEFAULT_PROJECT_ID`, and `LOG_LEVEL`.
+- Never commit secrets; ensure sensitive values stay outside tracked files.
+- Validate connectivity with `claude mcp list` after launching the server to confirm stdio transport is working.
+
+언제나 한글로 답해줘
