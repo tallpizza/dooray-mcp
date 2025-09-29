@@ -1,40 +1,65 @@
 #!/usr/bin/env python3
 import argparse
 import asyncio
+import os
 import sys
 
-from mcp.client.stdio import stdio_client
+from mcp.client.session import ClientSession
+from mcp.client.stdio import StdioServerParameters, stdio_client
 
 
 DEFAULT_SERVER_CMD = ["uv", "run", "dooray-mcp"]
+DEFAULT_ENV = {
+    "DOORAY_API_TOKEN": "spuio91dvw2b:09_758iFSlKyvtcsfVa6JA",
+    "DOORAY_BASE_URL": "https://api.dooray.com",
+    "DOORAY_DEFAULT_PROJECT_ID": "4083027435241316930",
+    "PYTHONUNBUFFERED": "1",
+    "PYENV_VERSION": "3.12.2",
+}
 
 
-async def run_tool(server_cmd, tool_name, args_dict):
-    # MCP 서버를 subprocess로 실행
-    proc = await asyncio.create_subprocess_exec(
-        *server_cmd,
-        stdin=asyncio.subprocess.PIPE,
-        stdout=asyncio.subprocess.PIPE,
+async def run_tool(server_cmd, tool_name, args_dict, list_only=False):
+    # MCP 서버 실행 파라미터 구성
+    env = os.environ.copy()
+    env.update(DEFAULT_ENV)
+
+    server = StdioServerParameters(
+        command=server_cmd[0],
+        args=server_cmd[1:],
+        env=env,
     )
 
-    async with stdio_client(proc.stdout, proc.stdin) as client:
-        await client.initialize()
-        tools = await client.list_tools()
-        tool_names = [t.name for t in tools]
+    async with stdio_client(server) as (read_stream, write_stream):
+        async with ClientSession(read_stream, write_stream) as client:
+            await client.initialize()
+            tools_result = await client.list_tools()
+            tool_names = [t.name for t in tools_result.tools]
 
-        if tool_name not in tool_names:
-            print(f"❌ Tool '{tool_name}' not found. Available: {tool_names}")
-            await client.shutdown()
-            return
+            if list_only:
+                print("🔧 Available tools:")
+                for name in tool_names:
+                    print(f" - {name}")
+                return
 
-        result = await client.call_tool(tool_name, args_dict)
-        print("✅ Result:", result)
+            if tool_name is None:
+                raise ValueError("Tool name is required when --list-tools is not specified")
 
-        await client.shutdown()
+            if tool_name not in tool_names:
+                print(f"❌ Tool '{tool_name}' not found. Available: {tool_names}")
+                return
+
+            result = await client.call_tool(tool_name, args_dict)
+            print("✅ Result:", result)
 
 def main():
     parser = argparse.ArgumentParser(description="Run MCP tool from CLI")
-    parser.add_argument("tool", help="Tool name to call")
+    parser.add_argument("tool", nargs="?", help="Tool name to call")
+    parser.add_argument(
+        "--list-tools",
+        dest="list_tools",
+        action="store_true",
+        help="List available tools and exit",
+    )
     parser.add_argument(
         "params",
         nargs=argparse.REMAINDER,
@@ -57,6 +82,13 @@ def main():
                 except ValueError:
                     pass
             params_dict[key] = val
+
+    if args.list_tools:
+        asyncio.run(run_tool(DEFAULT_SERVER_CMD, None, {}, list_only=True))
+        return
+
+    if args.tool is None:
+        parser.error("tool is required unless --list-tools is supplied")
 
     asyncio.run(run_tool(DEFAULT_SERVER_CMD, args.tool, params_dict))
 

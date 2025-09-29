@@ -27,7 +27,7 @@
 - Stub Dooray HTTP calls using `httpx.MockTransport` to keep tests deterministic.
 - Name test files `test_*.py` and mirror the tool or component under test.
 - Run `pytest --maxfail=1` before pushing to catch regressions quickly.
-- Manual tool validation: `python run-tool.py dooray_tasks --action list` launches the MCP server with `uv run dooray-mcp`, confirms the tool is registered, and executes the specified action; swap in other tool names and flags as needed.
+- Manual tool validation: `python run-tool.py dooray_tasks --action list` launches the MCP server with `uv run dooray-mcp`, confirms the tool is registered, and executes the specified action; swap in other tool names and flags as needed. 사용 가능한 도구는 `python run-tool.py --list-tools`로 확인할 수 있습니다.
 
 ## Commit & Pull Request Guidelines
 
