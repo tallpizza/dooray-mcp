@@ -2,6 +2,10 @@
 
 Dooray API를 Claude Code와 연동하기 위한 MCP (Model Context Protocol) 서버입니다.
 
+<a href="https://glama.ai/mcp/servers/@tallpizza/dooray-mcp">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@tallpizza/dooray-mcp/badge" alt="Dooray Server MCP server" />
+</a>
+
 ## 기능
 
 이 MCP 서버는 Dooray의 주요 기능을 6개의 통합 도구로 제공합니다:
