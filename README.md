@@ -11,7 +11,7 @@ Dooray API를 Claude Code와 연동하기 위한 MCP (Model Context Protocol) �
 3. **dooray_tags** - 태그 관리 (목록 조회, 생성, 업무에 태그 추가/제거)
 4. **dooray_search** - 검색 기능 (업무 검색, 담당자별/상태별/태그별/기간별 검색)
 5. **dooray_members** - 사용자 관리 (이메일/ID 검색, 사용자 정보 조회, 프로젝트 멤버 목록)
-6. **dooray_files** - 파일 및 이미지 관리 (업무 파일 목록, 파일 메타데이터, 파일 콘텐츠 다운로드, Content ID로 직접 접근)
+6. **dooray_files** - 파일 및 이미지 관리 (업무 파일 업로드/목록, 파일 메타데이터, 파일 콘텐츠 다운로드, Content ID로 직접 접근)
 
 ## 빠른 설치
 
@@ -200,6 +200,16 @@ claude --print "dooray_comments를 사용해서 댓글을 생성해주세요."
 ### 6. dooray_files (파일 및 이미지 관리)
 
 ```typescript
+// 업무 파일 업로드
+{
+  "action": "upload_task_file",
+  "taskId": "task-456",
+  "filePath": "/path/to/image.png",
+  "filename": "image.png",    // 선택사항
+  "mimeType": "image/png",    // 선택사항 (미지정 시 확장자로 추정)
+  "projectId": "project-123"  // 선택사항 (환경 변수 사용 가능)
+}
+
 // 업무 파일 목록 조회
 {
   "action": "list_task_files",
@@ -215,7 +225,7 @@ claude --print "dooray_comments를 사용해서 댓글을 생성해주세요."
   "projectId": "project-123"
 }
 
-// 업무 파일 콘텐츠 다운로드 (base64 인코딩)
+// 업무 파일 콘텐츠 다운로드 (임시 파일로 저장)
 {
   "action": "get_task_file_content",
   "taskId": "task-456",
@@ -229,7 +239,7 @@ claude --print "dooray_comments를 사용해서 댓글을 생성해주세요."
   "fileId": "content-id-xyz"
 }
 
-// Content ID로 직접 파일 콘텐츠 다운로드 (Drive API)
+// Content ID로 직접 파일 콘텐츠 다운로드 (Drive API, 임시 파일로 저장)
 {
   "action": "get_drive_file_content",
   "fileId": "content-id-xyz"

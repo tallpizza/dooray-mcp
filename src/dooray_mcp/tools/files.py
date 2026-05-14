@@ -33,6 +33,8 @@ class FilesTool:
         try:
             if action == "list_task_files":
                 return await self._list_task_files(arguments)
+            elif action == "upload_task_file":
+                return await self._upload_task_file(arguments)
             elif action == "get_task_file_metadata":
                 return await self._get_task_file_metadata(arguments)
             elif action == "get_task_file_content":
@@ -59,6 +61,30 @@ class FilesTool:
         result = await self.client.list_task_files(project_id, task_id)
         return json.dumps(result, ensure_ascii=False)
     
+    async def _upload_task_file(self, arguments: Dict[str, Any]) -> str:
+        """Upload a file to a task."""
+        project_id = arguments.get("projectId")
+        task_id = arguments.get("taskId")
+        file_path = arguments.get("filePath")
+        filename = arguments.get("filename")
+        mime_type = arguments.get("mimeType")
+
+        if not project_id or not task_id or not file_path:
+            return json.dumps({"error": "projectId, taskId, and filePath are required for upload_task_file action"})
+
+        normalized_file_path = os.path.abspath(os.path.expanduser(str(file_path)))
+        if not os.path.isfile(normalized_file_path):
+            return json.dumps({"error": f"filePath does not exist or is not a file: {normalized_file_path}"})
+
+        result = await self.client.upload_task_file(
+            project_id,
+            task_id,
+            normalized_file_path,
+            filename=filename,
+            mime_type=mime_type,
+        )
+        return json.dumps(result, ensure_ascii=False)
+
     async def _get_task_file_metadata(self, arguments: Dict[str, Any]) -> str:
         """Get metadata for a file attached to a task."""
         project_id = arguments.get("projectId")

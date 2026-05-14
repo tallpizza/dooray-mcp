@@ -1,7 +1,10 @@
 """Dooray API Client for interacting with Dooray REST API."""
 
 import logging
+import mimetypes
+import os
 from typing import Any, Dict, List, Optional
+from urllib.parse import urljoin
 import httpx
 
 logger = logging.getLogger(__name__)
@@ -21,7 +24,6 @@ class DoorayClient:
         self.project_id = project_id
         self.headers = {
             "Authorization": f"dooray-api {api_token}",
-            "Content-Type": "application/json"
         }
         self.client = httpx.AsyncClient(headers=self.headers, timeout=30.0)
     
@@ -289,6 +291,50 @@ class DoorayClient:
         """List files attached to a task."""
         return await self._request("GET", f"/project/v1/projects/{project_id}/posts/{task_id}/files")
     
+    async def upload_task_file(
+        self,
+        project_id: str,
+        task_id: str,
+        file_path: str,
+        filename: Optional[str] = None,
+        mime_type: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Upload a file to a task."""
+        if not os.path.isfile(file_path):
+            raise Exception(f"File not found: {file_path}")
+
+        upload_filename = filename or os.path.basename(file_path)
+        upload_mime_type = mime_type or mimetypes.guess_type(upload_filename)[0] or "application/octet-stream"
+        url = f"{self.base_url}/project/v1/projects/{project_id}/posts/{task_id}/files"
+        logger.debug(f"Making POST request for task file upload to {url}")
+
+        try:
+            request_url = url
+            with open(file_path, "rb") as file_obj:
+                for _ in range(3):
+                    file_obj.seek(0)
+                    files = {"file": (upload_filename, file_obj, upload_mime_type)}
+                    response = await self.client.post(request_url, files=files, follow_redirects=False)
+
+                    if response.status_code in [307, 308]:
+                        redirect_url = response.headers.get("location")
+                        if not redirect_url:
+                            raise Exception("Dooray API redirect response missing Location header")
+                        request_url = urljoin(str(response.url), redirect_url)
+                        logger.debug(f"Following upload redirect to {request_url}")
+                        continue
+
+                    response.raise_for_status()
+                    return response.json()
+
+            raise Exception("Dooray API upload redirected too many times")
+        except httpx.HTTPError as e:
+            logger.error(f"HTTP error: {e}")
+            raise Exception(f"Dooray API error: {str(e)}")
+        except Exception as e:
+            logger.error(f"Request error: {e}")
+            raise Exception(f"Request failed: {str(e)}")
+
     async def get_task_file_metadata(self, project_id: str, task_id: str, file_id: str) -> Dict[str, Any]:
         """Get file metadata for a task file."""
         return await self._request("GET", f"/project/v1/projects/{project_id}/posts/{task_id}/files/{file_id}", params={"media": "meta"})

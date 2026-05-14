@@ -255,13 +255,13 @@ async def handle_list_tools() -> list[types.Tool]:
         ),
         types.Tool(
             name="dooray_files",
-            description="Manage Dooray files and images - list task files, get file metadata, download file content from tasks or directly by content ID",
+            description="Manage Dooray files and images - upload/list task files, get file metadata, download file content from tasks or directly by content ID",
             inputSchema={
                 "type": "object",
                 "properties": {
                     "action": {
                         "type": "string",
-                        "enum": ["list_task_files", "get_task_file_metadata", "get_task_file_content", "get_drive_file_metadata", "get_drive_file_content"],
+                        "enum": ["list_task_files", "upload_task_file", "get_task_file_metadata", "get_task_file_content", "get_drive_file_metadata", "get_drive_file_content"],
                         "description": "Action to perform on files"
                     },
                     "taskId": {
@@ -271,6 +271,18 @@ async def handle_list_tools() -> list[types.Tool]:
                     "fileId": {
                         "type": "string",
                         "description": "File ID (required for file operations)"
+                    },
+                    "filePath": {
+                        "type": "string",
+                        "description": "Local file path to upload (required for upload_task_file)"
+                    },
+                    "filename": {
+                        "type": "string",
+                        "description": "Optional filename override for upload_task_file"
+                    },
+                    "mimeType": {
+                        "type": "string",
+                        "description": "Optional MIME type override for upload_task_file (e.g. image/png)"
                     },
                     "projectId": {
                         "type": "string",
@@ -333,7 +345,7 @@ async def handle_call_tool(name: str, arguments: dict[str, Any] | None) -> list[
         args["projectId"] = default_project_id
     elif name == "dooray_files":
         # Add projectId for task file actions only if not provided
-        if args.get("action") in ["list_task_files", "get_task_file_metadata", "get_task_file_content"]:
+        if args.get("action") in ["list_task_files", "upload_task_file", "get_task_file_metadata", "get_task_file_content"]:
             if not args.get("projectId") and not default_project_id:
                 return [types.TextContent(
                     type="text",
