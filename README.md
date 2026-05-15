@@ -210,6 +210,8 @@ claude --print "dooray_comments를 사용해서 댓글을 생성해주세요."
   "projectId": "project-123"  // 선택사항 (환경 변수 사용 가능)
 }
 
+// 응답에는 result.id와 함께 result.fileId, result.metaUrl, result.rawUrl이 포함됩니다.
+
 // 업무 파일 목록 조회
 {
   "action": "list_task_files",

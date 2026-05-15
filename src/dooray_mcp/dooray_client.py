@@ -325,7 +325,16 @@ class DoorayClient:
                         continue
 
                     response.raise_for_status()
-                    return response.json()
+                    result = response.json()
+                    file_id = result.get("result", {}).get("id")
+                    if file_id:
+                        file_url = f"{self.base_url}/project/v1/projects/{project_id}/posts/{task_id}/files/{file_id}"
+                        result["result"].update({
+                            "fileId": file_id,
+                            "metaUrl": f"{file_url}?media=meta",
+                            "rawUrl": f"{file_url}?media=raw",
+                        })
+                    return result
 
             raise Exception("Dooray API upload redirected too many times")
         except httpx.HTTPError as e:
