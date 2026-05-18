@@ -6,7 +6,11 @@
     "env": {
       "DOORAY_API_TOKEN": "your-dooray-api-token-here",
       "DOORAY_BASE_URL": "https://api.dooray.com",
-      "DOORAY_DEFAULT_PROJECT_ID": "your-default-project-id-here"
+      "DOORAY_DEFAULT_PROJECT_ID": "your-default-project-id-here",
+      "S3_BUCKET": "your-public-image-bucket",
+      "S3_REGION": "ap-northeast-2",
+      "S3_ACCESS_KEY_ID": "your-s3-access-key",
+      "S3_SECRET_ACCESS_KEY": "your-s3-secret-key"
     }
   }
 }

@@ -329,10 +329,19 @@ class DoorayClient:
                     file_id = result.get("result", {}).get("id")
                     if file_id:
                         file_url = f"{self.base_url}/project/v1/projects/{project_id}/posts/{task_id}/files/{file_id}"
+                        metadata_url = f"{file_url}?media=meta"
+                        download_url = f"{file_url}?media=raw"
                         result["result"].update({
                             "fileId": file_id,
-                            "metaUrl": f"{file_url}?media=meta",
-                            "rawUrl": f"{file_url}?media=raw",
+                            "metaUrl": metadata_url,
+                            "rawUrl": download_url,
+                            "metadataApiUrl": metadata_url,
+                            "downloadApiUrl": download_url,
+                            "embeddable": False,
+                            "urlNote": (
+                                "rawUrl/downloadApiUrl은 Authorization 헤더가 필요한 Dooray 다운로드 API입니다. "
+                                "Dooray 업무 본문이나 댓글의 이미지 URL로 붙여 넣으면 표시되지 않습니다."
+                            ),
                         })
                     return result
 

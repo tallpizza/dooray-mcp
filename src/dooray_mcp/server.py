@@ -255,13 +255,13 @@ async def handle_list_tools() -> list[types.Tool]:
         ),
         types.Tool(
             name="dooray_files",
-            description="Manage Dooray files and images - upload/list task files, get file metadata, download file content from tasks or directly by content ID",
+            description="Manage Dooray files and images - upload/list task files, upload body images to S3, get file metadata, download file content from tasks or directly by content ID",
             inputSchema={
                 "type": "object",
                 "properties": {
                     "action": {
                         "type": "string",
-                        "enum": ["list_task_files", "upload_task_file", "get_task_file_metadata", "get_task_file_content", "get_drive_file_metadata", "get_drive_file_content"],
+                        "enum": ["list_task_files", "upload_task_file", "upload_body_image", "get_task_file_metadata", "get_task_file_content", "get_drive_file_metadata", "get_drive_file_content"],
                         "description": "Action to perform on files"
                     },
                     "taskId": {
@@ -274,19 +274,27 @@ async def handle_list_tools() -> list[types.Tool]:
                     },
                     "filePath": {
                         "type": "string",
-                        "description": "Local file path to upload (required for upload_task_file)"
+                        "description": "Local file path to upload (required for upload_task_file/upload_body_image)"
                     },
                     "filename": {
                         "type": "string",
-                        "description": "Optional filename override for upload_task_file"
+                        "description": "Optional filename override for upload_task_file/upload_body_image"
                     },
                     "mimeType": {
                         "type": "string",
-                        "description": "Optional MIME type override for upload_task_file (e.g. image/png)"
+                        "description": "Optional MIME type override for upload_task_file/upload_body_image (e.g. image/png)"
                     },
                     "projectId": {
                         "type": "string",
                         "description": "Project ID (optional - uses default from environment if not provided, required for task file actions)"
+                    },
+                    "s3Key": {
+                        "type": "string",
+                        "description": "Optional S3 object key for upload_body_image"
+                    },
+                    "altText": {
+                        "type": "string",
+                        "description": "Optional image alt text for upload_body_image markdown/html"
                     }
                 },
                 "required": ["action"]

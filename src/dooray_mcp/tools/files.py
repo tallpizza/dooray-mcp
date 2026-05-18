@@ -1,12 +1,13 @@
 """Files tool for managing Dooray files and images."""
 
-import base64
 import json
 import logging
+import mimetypes
 import os
 import tempfile
 from typing import Any, Dict
-from urllib.parse import urlparse
+
+from ..s3_uploader import S3Config, S3Uploader
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,8 @@ class FilesTool:
                 return await self._list_task_files(arguments)
             elif action == "upload_task_file":
                 return await self._upload_task_file(arguments)
+            elif action == "upload_body_image":
+                return await self._upload_body_image(arguments)
             elif action == "get_task_file_metadata":
                 return await self._get_task_file_metadata(arguments)
             elif action == "get_task_file_content":
@@ -84,6 +87,45 @@ class FilesTool:
             mime_type=mime_type,
         )
         return json.dumps(result, ensure_ascii=False)
+
+    async def _upload_body_image(self, arguments: Dict[str, Any]) -> str:
+        """Upload an image to S3 for use in Dooray body markdown/html."""
+        file_path = arguments.get("filePath")
+        filename = arguments.get("filename")
+        mime_type = arguments.get("mimeType")
+        s3_key = arguments.get("s3Key")
+        alt_text = arguments.get("altText")
+
+        if not file_path:
+            return json.dumps({"error": "filePath is required for upload_body_image action"})
+
+        normalized_file_path = os.path.abspath(os.path.expanduser(str(file_path)))
+        if not os.path.isfile(normalized_file_path):
+            return json.dumps({"error": f"filePath does not exist or is not a file: {normalized_file_path}"})
+
+        upload_filename = str(filename) if filename else os.path.basename(normalized_file_path)
+        upload_mime_type = mime_type or mimetypes.guess_type(upload_filename)[0] or "application/octet-stream"
+        if not str(upload_mime_type).startswith("image/"):
+            return json.dumps({"error": f"upload_body_image only supports image/* MIME types: {upload_mime_type}"})
+
+        try:
+            uploader = S3Uploader(S3Config.from_env())
+            result = await uploader.upload_file(
+                normalized_file_path,
+                filename=upload_filename,
+                content_type=str(upload_mime_type),
+                key=str(s3_key) if s3_key else None,
+            )
+            image_alt = str(alt_text) if alt_text else result["filename"]
+            result.update({
+                "markdown": f"![{image_alt}]({result['url']})",
+                "html": f'<img src="{result["url"]}" alt="{image_alt}">',
+                "usageNote": "Dooray 업무/댓글 본문에 markdown 값을 넣으면 이미지로 표시됩니다. S3 객체는 Dooray 사용자가 인증 없이 접근 가능해야 합니다.",
+            })
+            return json.dumps(result, ensure_ascii=False)
+        except Exception as e:
+            logger.error(f"Error uploading body image to S3: {e}")
+            return json.dumps({"error": f"Failed to upload body image to S3: {str(e)}"}, ensure_ascii=False)
 
     async def _get_task_file_metadata(self, arguments: Dict[str, Any]) -> str:
         """Get metadata for a file attached to a task."""

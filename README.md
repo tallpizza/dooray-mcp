@@ -11,7 +11,7 @@ Dooray API를 Claude Code와 연동하기 위한 MCP (Model Context Protocol) �
 3. **dooray_tags** - 태그 관리 (목록 조회, 생성, 업무에 태그 추가/제거)
 4. **dooray_search** - 검색 기능 (업무 검색, 담당자별/상태별/태그별/기간별 검색)
 5. **dooray_members** - 사용자 관리 (이메일/ID 검색, 사용자 정보 조회, 프로젝트 멤버 목록)
-6. **dooray_files** - 파일 및 이미지 관리 (업무 파일 업로드/목록, 파일 메타데이터, 파일 콘텐츠 다운로드, Content ID로 직접 접근)
+6. **dooray_files** - 파일 및 이미지 관리 (업무 파일 업로드/목록, S3 본문 이미지 업로드, 파일 메타데이터, 파일 콘텐츠 다운로드, Content ID로 직접 접근)
 
 ## 빠른 설치
 
@@ -58,6 +58,12 @@ DOORAY_API_TOKEN=your-actual-dooray-api-token
 DOORAY_BASE_URL=https://api.dooray.com
 DOORAY_DEFAULT_PROJECT_ID=your-default-project-id
 
+# 선택: Dooray 본문 이미지용 S3-compatible 스토리지 (upload_body_image 사용 시)
+S3_BUCKET=your-public-image-bucket
+S3_REGION=ap-northeast-2
+S3_ACCESS_KEY_ID=your-s3-access-key
+S3_SECRET_ACCESS_KEY=your-s3-secret-key
+
 LOG_LEVEL=INFO
 ```
 
@@ -74,7 +80,11 @@ claude mcp add-json dooray '{
   "env": {
     "DOORAY_API_TOKEN": "your-actual-dooray-api-token",
     "DOORAY_BASE_URL": "https://api.dooray.com",
-    "DOORAY_DEFAULT_PROJECT_ID": "your-default-project-id"
+    "DOORAY_DEFAULT_PROJECT_ID": "your-default-project-id",
+    "S3_BUCKET": "your-public-image-bucket",
+    "S3_REGION": "ap-northeast-2",
+    "S3_ACCESS_KEY_ID": "your-s3-access-key",
+    "S3_SECRET_ACCESS_KEY": "your-s3-secret-key"
   }
 }'
 ```
@@ -210,7 +220,23 @@ claude --print "dooray_comments를 사용해서 댓글을 생성해주세요."
   "projectId": "project-123"  // 선택사항 (환경 변수 사용 가능)
 }
 
-// 응답에는 result.id와 함께 result.fileId, result.metaUrl, result.rawUrl이 포함됩니다.
+// 응답에는 result.id와 함께 result.fileId, result.metadataApiUrl, result.downloadApiUrl이 포함됩니다.
+// 주의: downloadApiUrl/rawUrl은 Authorization 헤더가 필요한 API URL입니다.
+// Dooray 본문/댓글에 이미지 URL로 붙여 넣으면 표시되지 않습니다. 업로드만으로 업무 첨부파일에는 등록됩니다.
+
+// Dooray 본문/댓글에 사용할 이미지 URL 생성 (S3 업로드)
+{
+  "action": "upload_body_image",
+  "filePath": "/path/to/image.png",
+  "filename": "image.png",        // 선택사항
+  "mimeType": "image/png",        // 선택사항
+  "altText": "스크린샷",          // 선택사항
+  "s3Key": "dooray/image.png"     // 선택사항 (미지정 시 자동 생성)
+}
+
+// 응답의 markdown 값을 업무/댓글 본문에 넣으면 됩니다.
+// 예: ![스크린샷](https://your-public-image-bucket.s3.ap-northeast-2.amazonaws.com/dooray-images/2026/05/18/....png)
+// S3 객체는 Dooray 사용자가 인증 없이 접근 가능해야 합니다.
 
 // 업무 파일 목록 조회
 {
@@ -247,6 +273,23 @@ claude --print "dooray_comments를 사용해서 댓글을 생성해주세요."
   "fileId": "content-id-xyz"
 }
 ```
+
+### S3 이미지 URL 설정
+
+`upload_body_image`에 필요한 최소 S3 환경변수는 아래 4개입니다.
+
+- `S3_BUCKET`
+- `S3_REGION`
+- `S3_ACCESS_KEY_ID`
+- `S3_SECRET_ACCESS_KEY`
+
+나머지는 기본값을 사용합니다.
+
+- `S3_PREFIX`: `dooray-images`
+- `S3_ACL`: `public-read` (`S3_ACL=none`이면 ACL 전송 안 함)
+- `S3_PUBLIC_BASE_URL`: 미설정 시 S3 공개 URL 자동 생성
+- `S3_ENDPOINT_URL`: 미설정 시 AWS S3 기본 endpoint 사용
+- `S3_FORCE_PATH_STYLE`: endpoint URL을 쓰면 기본 `true`, 아니면 `false`
 
 ## API 정보
 
